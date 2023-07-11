@@ -25,7 +25,7 @@ const apiCall = async (endpoint: string) => {
     return response.data;
   } catch (error) {
     console.error(error, "<< [weather services error]");
-    return null;
+    throw error;
   }
 };
 

@@ -1,5 +1,13 @@
-import { Image, Text, TextInput, TouchableOpacity, View } from "react-native";
-import React, { useCallback, useEffect, useState } from "react";
+import {
+  Alert,
+  Dimensions,
+  Image,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { theme } from "../theme";
@@ -10,25 +18,57 @@ import { debounce } from "lodash";
 import { fetchLocations, fetchWeatherForecast } from "../service/weather";
 import { weatherImages } from "../constants";
 import * as Progress from "react-native-progress";
+import { getCityName, storeCityName } from "../utils/asyncStorage";
+
+const windowHeight = Dimensions.get("window").height;
 
 const HomeScreen = () => {
   const [showSearch, setShowSearch] = useState<boolean>(false);
   const [locations, setLocations] = useState([]);
   const [weather, setWeather] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  const refInput = useRef<any>(null);
+
   useEffect(() => {
     fetchInitialWeatherDisplay();
   }, []);
 
-  const fetchInitialWeatherDisplay = () => {
+  const toggleSearchHandle = () => {
+    setShowSearch(!showSearch);
+    if (showSearch === false) {
+      setTimeout(() => {
+        refInput.current.focus();
+      }, 100);
+    }
+  };
+
+  const fetchInitialWeatherDisplay = async () => {
+    const storedCityName = await getCityName();
+    const cityName = storedCityName ? storedCityName : "Bangkok";
+
     fetchWeatherForecast({
-      cityName: "Bangkok",
+      cityName: cityName,
       days: "3",
-    }).then((data) => {
-      // console.log(data, " << [forecast DATA]");
-      setWeather(data);
-      setIsLoading(false);
-    });
+    })
+      .then((data) => {
+        setWeather(data);
+        setIsLoading(false);
+      })
+      .catch((error) => {
+        Alert.alert(
+          "Something went wrong...",
+          error.response.data.error.message,
+          [
+            {
+              text: "OK",
+              style: "cancel",
+            },
+          ],
+          { cancelable: false }
+        );
+        setIsLoading(false);
+      });
   };
 
   const handleSelectLocation = (location: any) => {
@@ -39,11 +79,27 @@ const HomeScreen = () => {
     fetchWeatherForecast({
       cityName: location.name,
       days: "3",
-    }).then((data) => {
-      // console.log(data, " << [forecast DATA]");
-      setWeather(data);
-      setIsLoading(false);
-    });
+    })
+      .then((data) => {
+        // console.log(data, " << [forecast DATA]");
+        setWeather(data);
+        storeCityName(location.name);
+        setIsLoading(false);
+      })
+      .catch((error) => {
+        Alert.alert(
+          "Something went wrong...",
+          error.response.data.error.message,
+          [
+            {
+              text: "OK",
+              style: "cancel",
+            },
+          ],
+          { cancelable: false }
+        );
+        setIsLoading(false);
+      });
   };
   const handleSearchLocation = (value: string) => {
     // console.log(value, " handleSearchLocation");
@@ -57,12 +113,12 @@ const HomeScreen = () => {
     }
   };
   const handleTextDebounce = useCallback(
-    debounce(handleSearchLocation, 1200),
+    debounce(handleSearchLocation, 1000),
     []
   );
 
   return (
-    <View className="flex-1 relative">
+    <View className="flex-1 relative" style={{ minHeight: windowHeight }}>
       <StatusBar style="light" />
       <Image
         blurRadius={70}
@@ -89,6 +145,7 @@ const HomeScreen = () => {
             >
               {showSearch && (
                 <TextInput
+                  ref={refInput}
                   onChangeText={handleTextDebounce}
                   placeholder="Search city"
                   placeholderTextColor="lightgray"
@@ -97,7 +154,7 @@ const HomeScreen = () => {
               )}
 
               <TouchableOpacity
-                onPress={() => setShowSearch(!showSearch)}
+                onPress={toggleSearchHandle}
                 className="rounded-full p-3 m-1"
                 style={{ backgroundColor: theme.bgWhite(0.3) }}
               >
