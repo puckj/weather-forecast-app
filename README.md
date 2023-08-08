@@ -1,5 +1,9 @@
 # weather-forecast-app
 
-- ReactNative (Expo
+- ReactNative (Expo)
 - NativeWind (CSS styles)
-- WeatherAPI (www.weatherapi.com)
+- [WeatherAPI](www.weatherapi.com)
+
+### Installation & run
+1. create `.env` file
+2. `yarn install` then `yarn expo start`
