@@ -260,7 +260,7 @@ const HomeScreen = () => {
             </View>
             <View className="flex-row justify-center space-x-5">
               {weather.forecast.forecastday.map((item, index) => {
-                // console.log(item);
+                // console.log(item.day.condition);
                 const date = new Date(item.date);
                 let dayName = date.toLocaleDateString("en-US", {
                   weekday: "long",
